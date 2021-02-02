@@ -1,0 +1,74 @@
+name: Deploy Production Elastic Beanstalk
+on:
+  push:
+    branches: [ main ]
+ 
+jobs:
+  build:
+    name:  Production Build
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.301
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --configuration Release --no-restore -r win-x64 /p:DebugType=None
+    
+    - name: Publish
+      run: dotnet publish CICDPracticalTwoRepo/CICDPracticalTwoRepo.csproj -c Release -f netcoreapp3.1 --no-build --no-restore -o PublishProEB/CICDPracticalTwoRepo/ -r win-x64 --self-contained true /p:DebugType=None
+   
+    - name: Easy Zip Files
+    # You may pin to the exact commit or the version.
+    # uses: vimtor/action-zip@5f1c4aa587ea41db1110df6a99981dbe19cee310
+      uses: vimtor/action-zip@v1
+      with:
+        # Files or directories to zip
+        files: ./PublishProEB/CICDPracticalTwoRepo/
+        # Name of output zip file
+        dest: ./PublishProEB/cicd.zip
+        # Whether to add subdirectories to simply zip all files to the root
+        #recursive: # optional, default is true
+      
+    - name: Easy Zip Files
+    # You may pin to the exact commit or the version.
+    # uses: vimtor/action-zip@5f1c4aa587ea41db1110df6a99981dbe19cee310
+      uses: vimtor/action-zip@v1
+      with:
+        # Files or directories to zip
+        files: ./PublishProEB/cicd.zip ./PublishProEB/CICDPracticalTwoRepo/aws-windows-deployment-manifest.json
+        # Name of output zip file
+        dest: ./PublishProEB/cicdprac.zip
+        # Whether to add subdirectories to simply zip all files to the root
+        #recursive: # optional, default is true
+      
+    - name: Get current time
+      uses: srfrnk/current-time@master
+      id: current-time
+      with:
+        format: YYYYMMDDHHmmss    
+      
+    - name: Deploy to EB
+      uses: einaregilsson/beanstalk-deploy@v14
+      with:
+        aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        application_name: cicdprac-app-bean
+        environment_name: Cicdpracappbean-env
+        version_label: cicd-prod-${{ steps.current-time.outputs.formattedTime }}
+        region: ap-south-1
+        deployment_package: D:/a/CICDPracticalTwoRepo/CICDPracticalTwoRepo/PublishProEB/cicdprac.zip
+        #use_existing_version_if_available: true
+      
+    - name: MSTeams Notification
+      uses: skitionek/notify-microsoft-teams@master
+      if: always()
+      with:
+          webhook_url: ${{ secrets.MSTEAMS_WEBHOOK }}
+          needs: ${{ toJson(needs) }}
+          job: ${{ toJson(job) }}
+          steps: ${{ toJson(steps) }}
