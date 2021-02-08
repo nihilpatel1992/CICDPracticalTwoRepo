@@ -20,7 +20,7 @@ jobs:
       run: dotnet build --configuration Release --no-restore -r win-x64 /p:DebugType=None
     
     - name: Publish
-      run: dotnet publish CICDPracticalTwoRepo/CICDPracticalTwoRepo.csproj -c Release -f netcoreapp3.1 --no-build --no-restore -o PublishProEB/CICDPracticalTwoRepo/ -r win-x64 --self-contained false /p:DebugType=None
+      run: dotnet publish CICDPracticalTwoRepo/CICDPracticalTwoRepo.csproj -c Release -f netcoreapp3.1 --no-build --no-restore -o PublishProEB/CICDPracticalTwoRepo/ -r win-x64 --self-contained true /p:DebugType=None
    
     - name: Easy Zip Files
     # You may pin to the exact commit or the version.
